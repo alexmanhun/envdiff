@@ -48,3 +48,38 @@ func TestFilterThenCompare(t *testing.T) {
 		t.Errorf("unexpected mismatch values: %+v", result.Mismatched["APP_VERSION"])
 	}
 }
+
+// TestFilterThenCompare_MissingKey verifies that a key present only in the left
+// map is reported as missing-in-right after filtering.
+func TestFilterThenCompare_MissingKey(t *testing.T) {
+	left := map[string]string{
+		"APP_NAME":    "myapp",
+		"APP_TIMEOUT": "30s",
+	}
+	right := map[string]string{
+		"APP_NAME": "myapp",
+	}
+
+	opts := filter.Options{Prefix: "APP_"}
+
+	filteredLeft, err := filter.Apply(left, opts)
+	if err != nil {
+		t.Fatalf("filter left: %v", err)
+	}
+	filteredRight, err := filter.Apply(right, opts)
+	if err != nil {
+		t.Fatalf("filter right: %v", err)
+	}
+
+	result := diff.Compare(filteredLeft, filteredRight)
+
+	if len(result.MissingInRight) != 1 {
+		t.Errorf("expected 1 missing-in-right (APP_TIMEOUT), got %v", result.MissingInRight)
+	}
+	if len(result.MissingInLeft) != 0 {
+		t.Errorf("expected no missing-in-left, got %v", result.MissingInLeft)
+	}
+	if len(result.Mismatched) != 0 {
+		t.Errorf("expected no mismatches, got %v", result.Mismatched)
+	}
+}
